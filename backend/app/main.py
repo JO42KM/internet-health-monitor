@@ -17,12 +17,15 @@ from backend.app.collectors.dns.collector import (
 from backend.app.models.dns_measurement import DNSMeasurement
 from backend.app.collectors.network.latency import measure_latency
 from backend.app.models.network_measurement import NetworkMeasurement
+from backend.app.api.targets import router as targets_router
 
 app = FastAPI(
     title="Internet Health Monitor",
     description="Monitoring van de Nederlandse internetinfrastructuur",
     version="0.1.0",
 )
+
+app.include_router(targets_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -204,20 +207,5 @@ def network_history(
         }
         for measurement in measurements
     ]
-
-@app.get("/api/database/health")
-def database_health(db: Session = Depends(get_db)):
-    try:
-        db.execute(text("SELECT 1"))
-
-        return {
-            "status": "connected",
-            "database": "internet_health",
-            "message": "Database connection successful",
-        }
-
-    except Exception as error:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database connection failed: {str(error)}",
-        )        
+    
+    
