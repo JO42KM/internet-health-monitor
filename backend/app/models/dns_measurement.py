@@ -18,7 +18,7 @@ class DNSMeasurement(Base):
     __tablename__ = "dns_measurements"
 
     id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, index=True
+        Integer, primary_key=True
     )
 
     domain: Mapped[str] = mapped_column(

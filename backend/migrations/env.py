@@ -4,6 +4,7 @@ from alembic import context
 
 from backend.app.database import Base, engine
 from backend.app.models.dns_measurement import DNSMeasurement
+from backend.app.models.network_measurement import NetworkMeasurement
 
 config = context.config
 

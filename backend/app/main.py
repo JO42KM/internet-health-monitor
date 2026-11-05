@@ -15,6 +15,8 @@ from backend.app.collectors.dns.collector import (
     DNS_RESOLVERS,
 )
 from backend.app.models.dns_measurement import DNSMeasurement
+from backend.app.collectors.network.latency import measure_latency
+from backend.app.models.network_measurement import NetworkMeasurement
 
 app = FastAPI(
     title="Internet Health Monitor",
@@ -121,6 +123,87 @@ def dns_intelligence(
         "results": results,
         "stored_measurements": len(results),
     }
+
+@app.post("/api/network/latency/{target}")
+def network_latency(
+    target: str,
+    count: int = Query(default=5, ge=1, le=20),
+    timeout: int = Query(default=2, ge=1, le=10),
+    db: Session = Depends(get_db),
+):
+    try:
+        # Perform the latency measurement
+        result = measure_latency(
+            target=target,
+            count=count,
+            timeout=timeout,
+        )
+
+        # Save the measurement in PostgreSQL
+        measurement = NetworkMeasurement(
+            target=result["target"],
+            status=result["status"],
+            packets_transmitted=result.get("packets_transmitted"),
+            packets_received=result.get("packets_received"),
+            packet_loss_percent=result.get("packet_loss_percent"),
+            latency_min_ms=result.get("latency_min_ms"),
+            latency_avg_ms=result.get("latency_avg_ms"),
+            latency_max_ms=result.get("latency_max_ms"),
+            jitter_ms=result.get("jitter_ms"),
+            samples_ms=result.get("samples_ms", []),
+            error=result.get("error"),
+            timestamp=datetime.fromisoformat(result["timestamp"]),
+        )
+
+        db.add(measurement)
+        db.commit()
+        db.refresh(measurement)
+
+        # Include the database ID in the response
+        result["id"] = measurement.id
+
+        return result
+
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+    except RuntimeError as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+    except Exception:
+        db.rollback()
+        raise
+
+@app.get("/api/network/history/{target}")
+def network_history(
+    target: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    measurements = (
+        db.query(NetworkMeasurement)
+        .filter(NetworkMeasurement.target == target)
+        .order_by(NetworkMeasurement.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "id": measurement.id,
+            "target": measurement.target,
+            "status": measurement.status,
+            "packets_transmitted": measurement.packets_transmitted,
+            "packets_received": measurement.packets_received,
+            "packet_loss_percent": measurement.packet_loss_percent,
+            "latency_min_ms": measurement.latency_min_ms,
+            "latency_avg_ms": measurement.latency_avg_ms,
+            "latency_max_ms": measurement.latency_max_ms,
+            "jitter_ms": measurement.jitter_ms,
+            "timestamp": measurement.timestamp,
+        }
+        for measurement in measurements
+    ]
 
 @app.get("/api/database/health")
 def database_health(db: Session = Depends(get_db)):
