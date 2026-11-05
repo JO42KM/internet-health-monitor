@@ -2,8 +2,14 @@ from datetime import datetime, timezone
 from time import perf_counter
 
 import dns.resolver
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+
+from backend.app.collectors.dns.collector import (
+    measure_dns,
+    SUPPORTED_RECORD_TYPES,
+    DNS_RESOLVERS,
+)
 
 app = FastAPI(
     title="Internet Health Monitor",
@@ -35,31 +41,65 @@ def health():
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+        
+@app.get("/api/dns/measure/{domain}")
+def dns_intelligence(
+    domain: str,
+    record_types: str = Query(default="A,AAAA"),
+    resolver: str = Query(default="cloudflare"),
+):
+    domain = domain.strip().rstrip(".")
 
-
-@app.get("/api/dns/{domain}")
-def measure_dns(domain: str):
-    resolver = dns.resolver.Resolver()
-    resolver.timeout = 3
-    resolver.lifetime = 5
-
-    start = perf_counter()
-
-    try:
-        answers = resolver.resolve(domain, "A")
-        duration = (perf_counter() - start) * 1000
-
-        return {
-            "domain": domain,
-            "record_type": "A",
-            "answers": [answer.to_text() for answer in answers],
-            "response_time_ms": round(duration, 2),
-            "status": "success",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-
-    except Exception as error:
+    if (
+        not domain
+        or len(domain) > 253
+        or any(char.isspace() for char in domain)
+        or "/" in domain
+    ):
         raise HTTPException(
-            status_code=502,
-            detail=f"DNS measurement failed: {str(error)}",
+            status_code=400,
+            detail="Invalid domain name",
         )
+
+    if resolver not in DNS_RESOLVERS:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported DNS resolver",
+        )
+
+    requested_types = [
+        item.strip().upper()
+        for item in record_types.split(",")
+        if item.strip()
+    ]
+
+    if not requested_types or len(requested_types) > len(SUPPORTED_RECORD_TYPES):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid record type selection",
+        )
+
+    if len(set(requested_types)) != len(requested_types):
+        raise HTTPException(
+            status_code=400,
+            detail="Duplicate record types are not allowed",
+        )
+
+    results = []
+
+    for record_type in requested_types:
+        if record_type not in SUPPORTED_RECORD_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported record type: {record_type}",
+            )
+
+        results.append(
+            measure_dns(domain, record_type, resolver)
+        )
+
+    return {
+        "domain": domain,
+        "resolver": resolver,
+        "results": results,
+    }        
