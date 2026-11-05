@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import NetworkMonitor from "@/components/NetworkMonitor";
 
 interface HealthData {
   status: string;
@@ -97,7 +98,9 @@ export default function Home() {
                 className={`mr-2 inline-block h-2 w-2 rounded-full ${
                   backend === "Online"
                     ? "bg-green-400"
-                    : "bg-red-400"
+                    : backend === "Offline"
+                    ? "bg-red-400"
+                    : "bg-yellow-400"
                 }`}
               />
               {backend}
@@ -105,7 +108,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Overview */}
+        {/* Infrastructure Overview */}
 
         <section>
           <h2 className="mb-5 text-lg font-semibold">
@@ -134,7 +137,7 @@ export default function Home() {
 
             <MetricCard
               title="Network monitoring"
-              value="Coming soon"
+              value="Active"
               description="Latency and packet loss"
             />
 
@@ -223,10 +226,17 @@ export default function Home() {
 
         </section>
 
+        {/* Network Monitor */}
+
+        <section className="mt-12">
+          <NetworkMonitor />
+        </section>
+
         {/* Footer */}
 
         <footer className="mt-16 border-t border-slate-800 pt-6 text-sm text-slate-500">
           Internet Health Monitor · Early development
+
           <span className="float-right">
             {health
               ? `Last API check: ${new Date(
