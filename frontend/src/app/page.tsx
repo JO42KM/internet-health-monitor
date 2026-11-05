@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import NetworkMonitor from "@/components/NetworkMonitor";
+import TargetManager from "@/components/TargetManager";
 
 interface HealthData {
   status: string;
@@ -225,7 +226,12 @@ export default function Home() {
           )}
 
         </section>
-
+        {/* Target Manager */}
+        
+        <section className="mt-12">
+          <TargetManager />
+        </section>
+        
         {/* Network Monitor */}
 
         <section className="mt-12">
