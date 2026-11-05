@@ -44,7 +44,6 @@ def measure_dns(domain: str, record_type: str, resolver_name: str):
             search=False,
             lifetime=5,
             raise_on_no_answer=False,
-            want_dnssec=True,
         )
 
         duration = (time.perf_counter() - start_time) * 1000
