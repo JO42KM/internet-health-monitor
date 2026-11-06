@@ -18,6 +18,7 @@ from backend.app.models.dns_measurement import DNSMeasurement
 from backend.app.collectors.network.latency import measure_latency
 from backend.app.models.network_measurement import NetworkMeasurement
 from backend.app.api.targets import router as targets_router
+from backend.app.api.sidn import router as sidn_router
 
 app = FastAPI(
     title="Internet Health Monitor",
@@ -26,6 +27,7 @@ app = FastAPI(
 )
 
 app.include_router(targets_router)
+app.include_router(sidn_router)
 
 app.add_middleware(
     CORSMiddleware,
