@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import NetworkMonitor from "@/components/NetworkMonitor";
 import TargetManager from "@/components/TargetManager";
+import SIDNMonitor from "@/components/sidn/SIDNMonitor";
 
 interface HealthData {
   status: string;
@@ -236,6 +237,12 @@ export default function Home() {
 
         <section className="mt-12">
           <NetworkMonitor />
+        </section>
+
+        {/* SIDN Monitor */}
+        
+        <section className="mt-12">
+          <SIDNMonitor />
         </section>
 
         {/* Footer */}
