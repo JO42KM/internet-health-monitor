@@ -247,7 +247,7 @@ export default function SIDNIPv6Chart() {
                   <Line
                     type="monotone"
                     dataKey="ipv6Aggregate"
-                    name="IPv6 aggregate"
+                    name="IPv6 networks (/64)"
                     stroke="#34d399"
                     strokeWidth={2}
                     dot={false}
